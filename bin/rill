@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+
+require 'rill'
+require 'optparse'
+
+options = {}
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: rill --files foo,bar [options]"
+
+  opts.on('-f', '--files FILES', Array, 'Files to be polished') do |files|
+    options[:files] = files
+  end
+  opts.on('-b', '--base [BASE]', 'Base directory') do |path|
+    base = path.nil? ? Dir.pwd : path
+    abort("Cann't find base directory #{path}") unless Dir.exist?(base)
+    options[:base] = base
+  end
+  opts.on('-p', '--preloads [PRELOADS]', Array, 'Modules to be preloaded') do |preloads|
+    options[:preloads] = preloads.nil? ? [] : preloads
+  end
+end
+
+begin
+  parser.parse!
+  raise OptionParser::MissingArgument if options[:files].nil?
+rescue OptionParser::InvalidOption, OptionParser::MissingArgument
+  puts ($!)
+  puts parser
+  exit
+end
+
+rill = Rill.new(:base => options[:base],
+                :preloads => options[:preloads])
+
+options[:files].each do |f|
+  base = options[:base]
+  pattern = File.join(base, f)
+
+  Dir.glob(pattern) do |f|
+    mod = f.sub(base, '').sub(/^\//, '')
+    rill.polish(mod)
+  end
+end
