@@ -161,7 +161,6 @@ class Rill
 
   # http://lifesinger.github.com/lab/2011/remove-comments-safely/
   def sans_comments(code)
-    code.gsub(/(?:^|\n|\r)\s*\/\*[\s\S]*?\*\/\s*(?:\r|\n|$)/, "\n")
-        .gsub(/(?:^|\n|\r)\s*\/\/.*(?:\r|\n|$)/, "\n")
+    code.gsub(/(?:^|\n|\r)\s*\/\*[\s\S]*?\*\/\s*(?:\r|\n|$)/, "\n").gsub(/(?:^|\n|\r)\s*\/\/.*(?:\r|\n|$)/, "\n")
   end
 end

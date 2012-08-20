@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'rill'
+require File.dirname(__FILE__) + '/../lib/rill'
 require 'optparse'
 
 options = {}
