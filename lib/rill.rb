@@ -1,3 +1,5 @@
+require 'json'
+
 class Rill
 
   DEFAULT_CONFIG = {
@@ -41,7 +43,7 @@ class Rill
 
     deps = parse_deps_from_define(code)
     deps.each do |dep|
-      dep = expand_path(mod, dep)
+      dep = expand_path(dep, mod)
       resolve_mod(dep)
     end
   end
@@ -102,20 +104,19 @@ class Rill
     mod.slice(start, fini - start)
   end
 
-  def expand_path(mod, dep)
-    context = mod.include?('/') ? mod.slice(0, mod.rindex('/')) : ''
-    dep_bare = dep.slice(dep.index('/') || 0, dep.length)
-    ret = ''
+  def expand_path(dep, mod)
+    # 与 File.expand_path 的逻辑还是有些分别的
+    base = mod.include?('/') ? mod.slice(0, mod.rindex('/') + 1) : ''
 
-    if dep.starts_with?('./')
-      ret = context + dep_bare
-    elsif dep.starts_with?('../')
-      ret = context.slice(0, context.rindex('/')) + dep_bare
-    else
-      ret = dep
+    while dep.start_with?('.')
+      dep.sub!(/^\.\//, '')
+      if dep.start_with?('../')
+        dep.sub!('../', '')
+        base.sub!(/[^\/]+\/$/, '')
+      end
     end
 
-    ret
+    base + dep
   end
 
   def parse_deps_from_define(code)
@@ -127,7 +128,7 @@ class Rill
       deps = match[2]
       deps = JSON.parse(deps.gsub("'", '"'))
       deps.delete_if do |d|
-        d.blank?
+        d.nil? || d =~ /^\s*$/
       end
     else
       pattern = /^define\((['"])[^'"]+\1,\s*(['"])([^\1]+)\1\.split/
