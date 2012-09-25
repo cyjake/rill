@@ -5,7 +5,8 @@ require 'rill'
 class RillTest < Test::Unit::TestCase
 
   def setup
-    @rill = Rill.new
+    @rill = Rill.new(:base => '/Users/nil/Projects/webapp/creative-center/public',
+                     :preloads => %w{ent})
   end
 
   def teardown
@@ -64,6 +65,16 @@ JS
     assert_equal %w(flag ham egg), deps
   end
 
+  def test_parse_deps_from_uglified_define
+    code = <<JS
+define('foo','./bar,../ham,cc/egg'.split(','),function(r,e){});
+JS
+    deps_expected = ['./bar', '../ham', 'cc/egg']
+    deps = @rill.parse_deps_from_define(code)
+
+    assert_equal(deps_expected, deps)
+  end
+
   def test_expand_path
     deps = %w{./foo ../bar ../../ham ../../../egg}
     mod = 'road/to/alcanus/maghda'
@@ -112,5 +123,48 @@ JS
 
     assert_equal [], deps
     assert result.start_with?(proper_define)
+  end
+
+  def test_resolve
+    mods = %w{cc/show cc/templets/tbu/tw2/200x250 cc/renderer/tbcc cc/vender/tbu/hook cc/datasource/normal}
+    @rill.resolve(mods)
+    modules = @rill.modules
+
+    assert modules.index('ent').nil?
+    assert modules.include?('cc/mustache')
+  end
+
+  def test_polish
+    mod = 'cc/foo/bar'
+    deps_expected = ['cc/foo/a', 'cc/theme/elf.css', 'cc/b']
+    code = <<JS
+define(function(require, exports) {
+  var a = require('./a');
+
+  // require('../theme/blank.css');
+  require('../theme/elf.css');
+  alert(require('../b').hello());
+  alert(require('../b').aloha());
+});
+JS
+    code_expected = <<JS
+define('#{mod}', ['./a', '../theme/elf.css', '../b'], function(require, exports) {
+  var a = require('./a');
+
+  // require('../theme/blank.css');
+  require('../theme/elf.css');
+  alert(require('../b').hello());
+  alert(require('../b').aloha());
+});
+JS
+    deps = @rill.parse_deps(code)
+    deps_expanded = deps.map do |dep|
+      @rill.expand_path(dep, mod)
+    end
+    code_polished = @rill.polish(mod, code)
+
+    assert_equal ['./a', '../theme/elf.css', '../b'], deps
+    assert_equal deps_expected, deps_expanded
+    assert_equal code_expected, code_polished
   end
 end

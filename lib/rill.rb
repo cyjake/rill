@@ -5,13 +5,17 @@ class Rill
   DEFAULT_CONFIG = {
     :base => Dir.pwd,
     :preloads => []
-  }
+  }.freeze
 
   def initialize(attrs = nil)
-    attrs ||= DEFAULT_CONFIG.dup
+    attrs = DEFAULT_CONFIG.merge(attrs || {})
 
     @base = attrs[:base]
-    @preloads = attrs[:preloads] || []
+    @preloads = attrs[:preloads]
+  end
+
+  def modules
+    @modules
   end
 
   def resolve(mods)
@@ -22,11 +26,11 @@ class Rill
       mods = [mods]
     end
     mods.each do |mod|
-      resolve_mod(mod)
+      resolve_module(mod)
     end
   end
 
-  def resolve_mod(mod)
+  def resolve_module(mod)
     return if @preloads.include?(mod) || @modules.include?(mod)
 
     mod = parse_mod(mod)
@@ -44,7 +48,7 @@ class Rill
     deps = parse_deps_from_define(code)
     deps.each do |dep|
       dep = expand_path(dep, mod)
-      resolve_mod(dep)
+      resolve_module(dep)
     end
   end
 
@@ -107,16 +111,17 @@ class Rill
   def expand_path(dep, mod)
     # 与 File.expand_path 的逻辑还是有些分别的
     base = mod.include?('/') ? mod.slice(0, mod.rindex('/') + 1) : ''
+    relativep = dep.start_with?('.')
 
     while dep.start_with?('.')
-      dep.sub!(/^\.\//, '')
+      dep = dep.sub(/^\.\//, '')
       if dep.start_with?('../')
-        dep.sub!('../', '')
+        dep = dep.sub('../', '')
         base.sub!(/[^\/]+\/$/, '')
       end
     end
 
-    base + dep
+    relativep ? base + dep : dep
   end
 
   def parse_deps_from_define(code)
