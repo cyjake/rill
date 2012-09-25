@@ -33,7 +33,7 @@ class Rill
   def resolve_module(mod)
     return if @preloads.include?(mod) || @modules.include?(mod)
 
-    mod = parse_mod(mod)
+    mod = parse_module(mod)
     path = File.join(@base, "#{mod}.js")
     code = File.open(path).read
 
@@ -68,7 +68,7 @@ class Rill
   # mark the module id
   # parse and set the module dependencies if not present
   def polish(mod, code = nil)
-    mod = parse_mod(mod)
+    mod = parse_module(mod)
 
     return polish_code(mod, code) unless code.nil? || code == ''
 
@@ -86,7 +86,7 @@ class Rill
   end
 
   def polish_code(mod, code)
-    mod = parse_mod(mod)
+    mod = parse_module(mod)
 
     if code =~ /^define\(function/
       deps = parse_deps(code)
@@ -101,11 +101,8 @@ class Rill
     code
   end
 
-  def parse_mod(mod)
-    start = 0
-    fini = mod.rindex('.js') || mod.length
-
-    mod.slice(start, fini - start)
+  def parse_module(mod)
+    mod.sub(/^#{@base}\/?/, '').sub(/\.js$/, '')
   end
 
   def expand_path(dep, mod)
