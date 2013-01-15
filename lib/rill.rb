@@ -37,7 +37,7 @@ class Rill
     path = File.join(@base, "#{mod}.js")
     code = File.open(path).read
 
-    unless code =~ /^define\((['"])[^'"]+\1/
+    unless code =~ /^s*define\(\s*(['"])[^'"]+\1/
       code = polish(mod, code)
       # fio = File.open(path, 'w')
       # fio.write(code)
@@ -75,7 +75,7 @@ class Rill
     path = File.join(@base, "#{mod}.js")
     code = File.open(path).read
 
-    unless code =~ /^define\((['"])[^'"]+\1/
+    unless code =~ /^\s*define\(\s*(['"])[^'"]+\1/
       code = polish_code(mod, code)
       fio = File.open(path, 'w')
       fio.write(code)
@@ -88,14 +88,14 @@ class Rill
   def polish_code(mod, code)
     mod = parse_module(mod)
 
-    if code =~ /^define\(function/
+    if code =~ /^\s*define\(\s*function/
       deps = parse_deps(code)
       deps -= @preloads
       deps_str = deps.length > 0 ? "['#{deps.join("', '")}']" : '[]'
 
-      code.sub!(/^(define\()/, "\\1'#{mod}', #{deps_str}, ")
-    elsif code =~ /^define\([\[\{]/
-      code.sub!(/^(define\()/, "\\1'#{mod}', ")
+      code.sub!(/^\s*define\(\s*/, "define('#{mod}', #{deps_str}, ")
+    elsif code =~ /^s*define\(\s*[\[\{]/
+      code.sub!(/^\s*define\(\s*/, "define('#{mod}', ")
     end
 
     code
@@ -122,7 +122,7 @@ class Rill
   end
 
   def parse_deps_from_define(code)
-    pattern = /^define\((['"])[^'"]+\1,\s*(\[[^\]]+\])/
+    pattern = /^\s*define\(\s*(['"])[^'"]+\1,\s*(\[[^\]]+\])/
     match = pattern.match(code)
     deps = []
 
@@ -133,7 +133,7 @@ class Rill
         d.nil? || d =~ /^\s*$/
       end
     else
-      pattern = /^define\((['"])[^'"]+\1,\s*(['"])([^\1]+)\1\.split/
+      pattern = /^\s*define\(\s*(['"])[^'"]+\1,\s*(['"])([^\1]+)\1\.split/
       match = pattern.match(code)
       if match
         deps = match[3].split(/,\s*/)
