@@ -1,0 +1,1 @@
+define('foo','./bar,../ham,cc/egg'.split(','),function(r,e){});

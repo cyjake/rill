@@ -11,7 +11,7 @@ class Rill
     attrs = DEFAULT_CONFIG.merge(attrs || {})
 
     @base = attrs[:base]
-    @preloads = attrs[:preloads]
+    @preloads = attrs[:preloads].is_a?(Array) ? attrs[:preloads] : []
   end
 
   def modules
@@ -35,12 +35,12 @@ class Rill
 
     mod = parse_module(mod)
     path = File.join(@base, "#{mod}.js")
-    code = File.open(path).read
+    code = File.open(path).read.lstrip
 
-    unless code =~ /^s*define\(\s*(['"])[^'"]+\1/
+    unless code =~ /^define\(\s*(['"])[^'"]+\1/
       code = polish(mod, code)
-      # fio = File.open(path, 'w')
-      # fio.write(code)
+      fio = File.open(path, 'w')
+      fio.write(code)
     end
     @codes.unshift(code)
     @modules.unshift(mod)
@@ -70,12 +70,14 @@ class Rill
   def polish(mod, code = nil)
     mod = parse_module(mod)
 
-    return polish_code(mod, code) unless code.nil? || code == ''
+    if !code.nil?
+      return polish_code(mod, code.lstrip)
+    end
 
     path = File.join(@base, "#{mod}.js")
-    code = File.open(path).read
+    code = File.open(path).read.lstrip
 
-    unless code =~ /^\s*define\(\s*(['"])[^'"]+\1/
+    unless code =~ /^define\(\s*(['"])[^'"]+\1/
       code = polish_code(mod, code)
       fio = File.open(path, 'w')
       fio.write(code)
@@ -88,14 +90,14 @@ class Rill
   def polish_code(mod, code)
     mod = parse_module(mod)
 
-    if code =~ /^\s*define\(\s*function/
+    if code =~ /^define\(\s*function/
       deps = parse_deps(code)
       deps -= @preloads
       deps_str = deps.length > 0 ? "['#{deps.join("', '")}']" : '[]'
 
-      code.sub!(/^\s*define\(\s*/, "define('#{mod}', #{deps_str}, ")
-    elsif code =~ /^s*define\(\s*[\[\{]/
-      code.sub!(/^\s*define\(\s*/, "define('#{mod}', ")
+      code.sub!(/^define\(\s*/, "define('#{mod}', #{deps_str}, ")
+    elsif code =~ /^define\(\s*[\[\{]/
+      code.sub!(/^define\(\s*/, "define('#{mod}', ")
     end
 
     code
@@ -122,7 +124,7 @@ class Rill
   end
 
   def parse_deps_from_define(code)
-    pattern = /^\s*define\(\s*(['"])[^'"]+\1,\s*(\[[^\]]+\])/
+    pattern = /^define\(\s*(['"])[^'"]+\1,\s*(\[[^\]]+\])/
     match = pattern.match(code)
     deps = []
 
@@ -133,7 +135,7 @@ class Rill
         d.nil? || d =~ /^\s*$/
       end
     else
-      pattern = /^\s*define\(\s*(['"])[^'"]+\1,\s*(['"])([^\1]+)\1\.split/
+      pattern = /^define\(\s*(['"])[^'"]+\1,\s*(['"])([^\1]+)\1\.split/
       match = pattern.match(code)
       if match
         deps = match[3].split(/,\s*/)

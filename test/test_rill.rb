@@ -7,6 +7,13 @@ class RillTest < Test::Unit::TestCase
   def setup
     @rill = Rill.new(:base => '/Users/nil/Projects/webapp/creative-center/public',
                      :preloads => %w{ent})
+
+    dir = File.join(Dir.pwd, 'test/cases', self.__name__.sub(/^test_/, ''))
+    fpath_was = "#{dir}/was.js"
+    fpath_expected = "#{dir}/expected.js"
+
+    @code_was = File.open(fpath_was).read if File.exist? fpath_was
+    @code_expected = File.open(fpath_expected).read if File.exist? fpath_expected
   end
 
   def teardown
@@ -14,65 +21,23 @@ class RillTest < Test::Unit::TestCase
   end
 
   def test_comment_removal
-    code = <<JS
-/**
- * @author yicai.cyj@taobao.com
- */
-// comment style two
-define(function(require, exports) {
-    // can you please remove this?
-    exports.hello = function() {};
-});
-JS
-    # the comment removal regexp will leave a blank line,
-    # NOTE: please do not delete the blank line below.
-    code_sans_comments = <<JS
-
-define(function(require, exports) {
-    exports.hello = function() {};
-});
-JS
-    result = @rill.sans_comments(code)
-
-    assert_equal code_sans_comments, result
+    assert_equal @code_expected, @rill.sans_comments(@code_was)
   end
 
   def test_parse_deps
-    code = <<JS
-define(function(require, exports) {
-    // require('rill');
-    exports.hello = function() {
-        require('console').log( require('i18n').t('hello, world') );
-    };
-});
-JS
-    deps = @rill.parse_deps(code)
-
-    assert_equal %w(console i18n), deps
+    assert_equal %w(console i18n), @rill.parse_deps(@code_was)
   end
 
   def test_parse_deps_from_define
-    code = <<-JS
-      define('foo', ['flag', 'ham', 'egg'], function(requre, exports) {
-          // you choose to manage dependencies by hand
-          require.async(require('flag').raised ? 'ham' : 'egg', function(ham_egg) {
-              // ...
-          });
-      });
-    JS
-    deps = @rill.parse_deps_from_define(code)
+    deps = @rill.parse_deps_from_define(@code_was)
 
     assert_equal %w(flag ham egg), deps
   end
 
   def test_parse_deps_from_uglified_define
-    code = <<-JS
-      define('foo','./bar,../ham,cc/egg'.split(','),function(r,e){});
-    JS
-    deps_expected = ['./bar', '../ham', 'cc/egg']
-    deps = @rill.parse_deps_from_define(code)
+    deps = @rill.parse_deps_from_define(@code_was)
 
-    assert_equal(deps_expected, deps)
+    assert_equal(['./bar', '../ham', 'cc/egg'], deps)
   end
 
   def test_expand_path
@@ -89,36 +54,9 @@ JS
   end
 
   def test_terrylee
-    code = <<-JS
-      define(function(require) { return function(jQuery) {
-      /*
-       * Translated default messages for the jQuery validation plugin.
-       * Locale: TW (Taiwan - Traditional Chinese)
-       */
-      jQuery.extend(jQuery.validator.messages, {
-          required: "不能为空",
-          remote: "您输入的有误",
-          email: "请输入正确的邮箱地址",
-          url: "请输入合法的URL",
-          date: "请输入合法的日期",
-          dateISO: "请输入合法的日期 (ISO).",
-          number: "请输入数字",
-          digits: "请输入整数",
-          creditcard: "请输入合法的信用卡号码",
-          equalTo: "请重复输入密码",
-          accept: "请输入有效的后缀",
-          maxlength: jQuery.validator.format("长度不能大于 {0}"),
-          minlength: jQuery.validator.format("长度不能小于 {0}"),
-          rangelength: jQuery.validator.format("请输入长度介于  {0} 和 {1} 之间"),
-          range: jQuery.validator.format("请输入  {0} 和 {1} 之间的数字"),
-          max: jQuery.validator.format("请输入小于 {0}的数字"),
-          min: jQuery.validator.format("请输入大于 {0}的数字")
-      });
-      }});
-    JS
-    deps = @rill.parse_deps(code)
+    deps = @rill.parse_deps(@code_was)
     mod = 'jquery/validator/messages'
-    result = @rill.polish(mod, code)
+    result = @rill.polish(mod, @code_was)
     proper_define = "define('#{mod}', [], function(require)"
 
     assert_equal [], deps
@@ -135,36 +73,15 @@ JS
   end
 
   def test_polish
-    mod = 'cc/foo/bar'
-    deps_expected = ['cc/foo/a', 'cc/theme/elf.css', 'cc/b']
-    code = <<-JS
-      define(    function(require, exports) {
-        var a = require('./a');
+    assert_equal ['./a', '../theme/elf.css', '../b'],
+                 @rill.parse_deps(@code_was)
 
-        // require('../theme/blank.css');
-        require('../theme/elf.css');
-        alert(require('../b').hello());
-        alert(require('../b').aloha());
-      });
-    JS
-    code_expected = <<-JS
-      define('#{mod}', ['./a', '../theme/elf.css', '../b'], function(require, exports) {
-        var a = require('./a');
+    assert_equal @code_expected,
+                 @rill.polish('cc/foo/bar', @code_was)
+  end
 
-        // require('../theme/blank.css');
-        require('../theme/elf.css');
-        alert(require('../b').hello());
-        alert(require('../b').aloha());
-      });
-    JS
-    deps = @rill.parse_deps(code)
-    deps_expanded = deps.map do |dep|
-      @rill.expand_path(dep, mod)
-    end
-    code_polished = @rill.polish(mod, code)
-
-    assert_equal ['./a', '../theme/elf.css', '../b'], deps
-    assert_equal deps_expected, deps_expanded
-    assert_equal code_expected.sub(/^\s+/, ''), code_polished
+  def test_polish_malformed_define
+    assert_equal @code_expected,
+                 @rill.polish('cc/foo/mal', @code_was)
   end
 end
