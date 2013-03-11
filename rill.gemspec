@@ -2,7 +2,7 @@ require 'rubygems'
 
 Gem::Specification.new do |s|
   s.name          = 'rill'
-  s.version       = '0.1.5'
+  s.version       = '0.1.6'
   s.executables   << 'rill'
   s.date          = '2012-08-20'
   s.summary       = 'SeaJS Bundler in Ruby'

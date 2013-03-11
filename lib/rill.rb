@@ -35,7 +35,7 @@ class Rill
 
     mod = parse_module(mod)
     path = File.join(@base, "#{mod}.js")
-    code = File.open(path).read.lstrip
+    code = File.open(path, 'r:bom|utf-8').read.lstrip
 
     unless code =~ /^define\(\s*(['"])[^'"]+\1/
       code = polish(mod, code)
@@ -59,7 +59,7 @@ class Rill
 
   def bundle
     @preloads.each do |file|
-      code = File.open(File.join(@base, "#{file}.js")).read
+      code = File.open(File.join(@base, "#{file}.js"), 'r:bom|utf-8').read
       @codes.unshift(code)
     end
     @codes.join("\n")
@@ -75,7 +75,7 @@ class Rill
     end
 
     path = File.join(@base, "#{mod}.js")
-    code = File.open(path).read.lstrip
+    code = File.open(path, 'r:bom|utf-8').read.lstrip
 
     unless code =~ /^define\(\s*(['"])[^'"]+\1/
       code = polish_code(mod, code)
