@@ -39,8 +39,6 @@ class Rill
 
     unless code =~ /^define\(\s*(['"])[^'"]+\1/
       code = polish(mod, code)
-      fio = File.open(path, 'w')
-      fio.write(code)
     end
     @codes.unshift(code)
     @modules.unshift(mod)
