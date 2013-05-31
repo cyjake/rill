@@ -31,9 +31,10 @@ class Rill
   end
 
   def resolve_module(mod)
+    mod = parse_module(mod)
+
     return if @preloads.include?(mod) || @modules.include?(mod)
 
-    mod = parse_module(mod)
     path = File.join(@base, "#{mod}.js")
     code = File.open(path, 'r:bom|utf-8').read.lstrip
 
@@ -128,9 +129,17 @@ class Rill
 
     if match
       deps = match[2]
-      deps = JSON.parse(deps.gsub("'", '"'))
+
+      begin
+        deps = JSON.parse(deps.gsub("'", '"'))
+      rescue JSON::ParserError
+        deps = []
+      end
+
+      deps = [] unless deps.is_a? Array
+
       deps.delete_if do |d|
-        d.nil? || d =~ /^\s*$/
+        d.nil? || d =~ /^\s*$/ || !d.is_a?(String)
       end
     else
       pattern = /^define\(\s*(['"])[^'"]+\1,\s*(['"])([^\1]+)\1\.split/
