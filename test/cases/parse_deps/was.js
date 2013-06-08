@@ -1,6 +1,6 @@
 define(function(require, exports) {
-    // require('rill');
+    // require('rill')
     exports.hello = function() {
-        require('console').log( require('i18n').t('hello, world') );
-    };
-});
+        require('console').log( require('i18n').t('hello, world') )
+    }
+})

@@ -80,6 +80,17 @@ class RillTest < Test::Unit::TestCase
                  @rill.polish('cc/foo/bar', @code_was)
   end
 
+
+  def test_polish_object
+    assert_equal [], @rill.parse_deps(@code_was)
+    assert_equal @code_expected, @rill.polish('cc/templets/4338', @code_was)
+  end
+
+  def test_polish_uglified_object
+    assert_equal [], @rill.parse_deps(@code_was)
+    assert_equal @code_expected, @rill.polish('cc/templets/4338', @code_was)
+  end
+
   def test_polish_malformed_define
     assert_equal @code_expected,
                  @rill.polish('cc/foo/mal', @code_was)

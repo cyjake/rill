@@ -2,9 +2,9 @@ require 'rubygems'
 
 Gem::Specification.new do |s|
   s.name          = 'rill'
-  s.version       = '0.1.9'
+  s.version       = '0.1.10'
   s.executables   << 'rill'
-  s.date          = '2012-08-20'
+  s.date          = '2013-06-08'
   s.summary       = 'SeaJS Bundler in Ruby'
   s.description   = 'A simple CMD module bundler'
   s.authors       = ['Jake Chen']

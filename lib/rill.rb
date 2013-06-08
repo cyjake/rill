@@ -95,6 +95,8 @@ class Rill
       deps_str = deps.length > 0 ? "['#{deps.join("', '")}']" : '[]'
 
       code.sub!(/^define\(\s*/, "define('#{mod}', #{deps_str}, ")
+    elsif code =~ /^define\(\s*\{/
+      code.sub!(/^define\(\s*/, "define('#{mod}', [], ")
     elsif code =~ /^define\(\s*[\[\{]/
       code.sub!(/^define\(\s*/, "define('#{mod}', ")
     end
